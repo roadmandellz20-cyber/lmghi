@@ -1,117 +1,115 @@
-export type Pillar = {
-  id: string;
+// src/lib/programs.ts
+import { sanityClient, sanityConfigured } from "@/lib/sanity";
+
+export type ProgramPillar = {
+  slug: string;
+  label: string;
   title: string;
-  shortLabel: string;
   summary: string;
   focusAreas: string[];
-  examplePrograms: string[];
-  outcomes: { label: string; value: string; note: string }[];
-  howWeMeasure: string[];
+  whatWeDo: string[];
+  exampleActivities: string[];
 };
 
-export const pillars: Pillar[] = [
+const FALLBACK_PILLARS: ProgramPillar[] = [
   {
-    id: "prevention",
-    title: "Prevention",
-    shortLabel: "Prevention",
-    summary:
-      "Disease prevention, surveillance, and rapid response—built for community-level delivery and measurable outcomes.",
-    focusAreas: ["Surveillance & early warning", "Community prevention", "Outbreak readiness"],
-    examplePrograms: ["Disease Prevention & Surveillance", "Community Health Campaigns"],
-    outcomes: [
-      { label: "Coverage", value: "—", note: "Communities reached" },
-      { label: "Detection", value: "—", note: "Time-to-signal improvement" },
-      { label: "Response", value: "—", note: "Response readiness" },
-    ],
-    howWeMeasure: [
-      "Sentinel reporting completeness",
-      "Detection-to-response time",
-      "Coverage of prevention interventions",
-      "Stockout rate for essential prevention supplies",
-    ],
-  },
-  {
-    id: "care",
+    slug: "primary-care",
+    label: "Delivery systems",
     title: "Primary Care Delivery",
-    shortLabel: "Primary Care",
     summary:
-      "Strengthening frontline services with standards, staffing support, and reliable operations—so care is consistent.",
-    focusAreas: ["Service quality & standards", "Supply & operations", "Referral pathways"],
-    examplePrograms: ["Primary Care Delivery", "Clinic Support Systems"],
-    outcomes: [
-      { label: "Quality", value: "—", note: "Standards adherence" },
-      { label: "Access", value: "—", note: "Service availability" },
-      { label: "Reliability", value: "—", note: "Operational uptime" },
-    ],
-    howWeMeasure: [
-      "Facility standards checklist score",
-      "Stockout rate for essential medicines",
-      "Referral completion rate",
-      "Wait time + service availability",
-    ],
+      "Strengthen frontline services with standards, staffing support, and reliable operations.",
+    focusAreas: ["Access", "Quality", "Continuity of care"],
+    whatWeDo: ["Facility support", "Referral pathways", "Service readiness"],
+    exampleActivities: ["Clinic audits", "Supply chain support", "Community linkage"],
   },
   {
-    id: "mch",
+    slug: "maternal-child-health",
+    label: "MCH",
     title: "Maternal & Child Health",
-    shortLabel: "MCH",
     summary:
-      "Improving outcomes through continuity of care, safe service pathways, and community-based follow-up.",
-    focusAreas: ["Antenatal & postnatal care", "Child health", "Continuity & follow-up"],
-    examplePrograms: ["Maternal & Child Health", "Continuity of Care"],
-    outcomes: [
-      { label: "Continuity", value: "—", note: "Follow-up completion" },
-      { label: "Safety", value: "—", note: "Safe pathway adherence" },
-      { label: "Outcomes", value: "—", note: "Maternal/child indicators" },
-    ],
-    howWeMeasure: [
-      "ANC/PNC completion rates",
-      "Immunization completion",
-      "Referral pathway adherence",
-      "Drop-off points (where clients disengage)",
-    ],
+      "Improve outcomes through continuity of care, referrals, and safe service pathways.",
+    focusAreas: ["ANC/PNC", "Newborn care", "Immunization"],
+    whatWeDo: ["Care pathways", "Training & mentorship", "Quality improvement"],
+    exampleActivities: ["Outreach days", "Mentorship rounds", "Case review"],
   },
   {
-    id: "mel",
+    slug: "monitoring-evaluation-learning",
+    label: "M&E",
     title: "Monitoring, Evaluation & Learning",
-    shortLabel: "MEL",
     summary:
-      "Metrics-first delivery: indicators before narratives, transparency by default, and evidence that stands scrutiny.",
-    focusAreas: ["Indicator design", "Data quality", "Reporting & disclosure"],
-    examplePrograms: ["M&E Framework", "Institutional-grade Reporting"],
-    outcomes: [
-      { label: "Clarity", value: "—", note: "Indicator readiness" },
-      { label: "Quality", value: "—", note: "Data reliability" },
-      { label: "Disclosure", value: "—", note: "Progressive reporting" },
-    ],
-    howWeMeasure: [
-      "Indicator definitions + baselines",
-      "Data quality audits",
-      "Reporting cadence adherence",
-      "Public disclosure completeness",
-    ],
+      "Measurement, transparency, and evidence that withstand institutional scrutiny.",
+    focusAreas: ["Indicators", "Dashboards", "Reporting"],
+    whatWeDo: ["M&E frameworks", "Data QA", "Periodic evaluations"],
+    exampleActivities: ["Indicator design", "Dashboards", "Evaluations"],
   },
   {
-    id: "capacity",
-    title: "Capacity",
-    shortLabel: "Capacity",
+    slug: "disease-prevention",
+    label: "Prevention",
+    title: "Disease Prevention & Surveillance",
     summary:
-      "Training and performance support for scale—supervision, competency-based learning, and delivery enablement.",
-    focusAreas: ["Workforce training", "Supportive supervision", "Performance systems"],
-    examplePrograms: ["Health Workforce & Training", "Delivery Enablement"],
-    outcomes: [
-      { label: "Competency", value: "—", note: "Skills achieved" },
-      { label: "Support", value: "—", note: "Supervision cadence" },
-      { label: "Scale", value: "—", note: "Sustained performance" },
-    ],
-    howWeMeasure: [
-      "Training completion + competency checks",
-      "Supervision frequency and quality",
-      "Performance improvement over time",
-      "Retention + staffing stability (where relevant)",
-    ],
+      "Early detection, rapid response, and community-level prevention programs.",
+    focusAreas: ["Screening", "Surveillance", "Response"],
+    whatWeDo: ["Community prevention", "Partner coordination", "Rapid reporting"],
+    exampleActivities: ["Campaigns", "Case finding", "Referral support"],
+  },
+  {
+    slug: "workforce-training",
+    label: "Capacity",
+    title: "Health Workforce & Training",
+    summary:
+      "Competency-based training, supervision, and performance support for scale.",
+    focusAreas: ["Training", "Supervision", "Performance"],
+    whatWeDo: ["Modules", "Mentorship", "Supportive supervision"],
+    exampleActivities: ["Competency modules", "Mentorship", "Supervision visits"],
+  },
+  {
+    slug: "governance-compliance",
+    label: "Governance",
+    title: "Program Governance & Compliance",
+    summary:
+      "Clear roles, oversight, and policies that keep delivery accountable.",
+    focusAreas: ["Governance", "Compliance", "Accountability"],
+    whatWeDo: ["Decision logs", "Policies", "Disclosure readiness"],
+    exampleActivities: ["Decision logs", "Policy reviews", "Disclosure readiness"],
   },
 ];
 
-export function getPillar(id: string) {
-  return pillars.find((p) => p.id === id);
+export function getPillars(): ProgramPillar[] {
+  return FALLBACK_PILLARS;
+}
+
+export async function getPillar(slug: string): Promise<ProgramPillar | null> {
+  // If Sanity isn't configured, do NOT crash builds — return fallback.
+  if (!sanityConfigured || !sanityClient) {
+    return FALLBACK_PILLARS.find((p) => p.slug === slug) ?? null;
+  }
+
+  // If Sanity is configured, try fetching; if it fails, fallback.
+  try {
+    const query = `*[_type == "pillar" && slug.current == $slug][0]{
+      "slug": slug.current,
+      label,
+      title,
+      summary,
+      focusAreas,
+      whatWeDo,
+      exampleActivities
+    }`;
+
+    const data = await sanityClient.fetch(query, { slug });
+
+    if (!data) return FALLBACK_PILLARS.find((p) => p.slug === slug) ?? null;
+
+    return {
+      slug: data.slug,
+      label: data.label ?? "Pillar",
+      title: data.title ?? "Program Pillar",
+      summary: data.summary ?? "",
+      focusAreas: Array.isArray(data.focusAreas) ? data.focusAreas : [],
+      whatWeDo: Array.isArray(data.whatWeDo) ? data.whatWeDo : [],
+      exampleActivities: Array.isArray(data.exampleActivities) ? data.exampleActivities : [],
+    };
+  } catch {
+    return FALLBACK_PILLARS.find((p) => p.slug === slug) ?? null;
+  }
 }
