@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2024-06-20",
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+  apiVersion: "2026-01-28.clover",
 });
 
 export async function POST(req: Request) {
@@ -36,9 +36,10 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (e: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Stripe error.";
     return NextResponse.json(
-      { error: e?.message ?? "Stripe error." },
+      { error: message },
       { status: 500 }
     );
   }

@@ -1,103 +1,78 @@
-"use client";
-
-import * as React from "react";
 import Link, { type LinkProps } from "next/link";
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from "react";
 
-type Variant = "primary" | "secondary" | "ghost";
-type Size = "sm" | "md" | "lg";
+type ButtonVariant = "default" | "primary" | "secondary" | "outline" | "ghost" | "soft" | "dark" | "danger";
+type ButtonSize = "sm" | "md" | "lg";
 
-type CommonProps = {
-  children?: React.ReactNode;
+type BaseProps = {
+  href?: LinkProps["href"];
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   className?: string;
-  variant?: Variant;
-  size?: Size;
-  disabled?: boolean;
+  children: ReactNode;
 };
 
-type ButtonAsButton = CommonProps &
-  Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children" | "disabled"> & {
-    href?: never;
+type ButtonAsButton = BaseProps &
+  Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children"> & {
+    href?: undefined;
+    target?: never;
+    rel?: never;
   };
 
-type ButtonAsLink = CommonProps &
-  Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "className" | "children" | "href"> & {
+type ButtonAsLink = BaseProps &
+  Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "className" | "children"> & {
     href: LinkProps["href"];
+    type?: never;
+    disabled?: never;
   };
 
 export type ButtonProps = ButtonAsButton | ButtonAsLink;
 
-function cn(...classes: Array<string | false | null | undefined>) {
+function cn(...classes: Array<string | undefined | false | null>) {
   return classes.filter(Boolean).join(" ");
 }
 
-function baseClasses(size: Size) {
-  const sizes: Record<Size, string> = {
-    sm: "h-9 px-3 text-sm",
-    md: "h-10 px-4 text-sm",
-    lg: "h-11 px-5 text-base",
-  };
+const base =
+  "inline-flex items-center justify-center gap-2 rounded-full font-medium transition " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 " +
+  "disabled:opacity-50 disabled:pointer-events-none select-none";
 
-  return cn(
-    "inline-flex items-center justify-center gap-2 rounded-full whitespace-nowrap",
-    "transition-colors select-none",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20",
-    "disabled:opacity-50 disabled:pointer-events-none",
-    sizes[size]
-  );
-}
+const variants: Record<ButtonVariant, string> = {
+  default: "bg-black text-white hover:bg-black/90 shadow-sm",
+  primary: "bg-black text-white hover:bg-black/90 shadow-sm",
+  secondary: "border border-black/15 bg-white text-neutral-900 hover:bg-black/[0.04]",
+  outline: "border border-black/15 bg-white text-neutral-900 hover:bg-black/[0.04]",
+  ghost: "bg-transparent text-neutral-900 hover:bg-black/[0.05]",
+  soft: "bg-black/[0.04] text-neutral-900 hover:bg-black/[0.07]",
+  dark: "bg-white text-black hover:bg-white/90 shadow-sm",
+  danger: "bg-red-600 text-white hover:bg-red-700 shadow-sm",
+};
 
-function variantClasses(variant: Variant) {
-  // IMPORTANT: force text colors to avoid dark-on-dark.
-  const variants: Record<Variant, string> = {
-    primary: cn(
-      "bg-neutral-900 text-white",
-      "hover:bg-neutral-800"
-    ),
-    secondary: cn(
-      "bg-white text-neutral-900 border border-neutral-200",
-      "hover:bg-neutral-50"
-    ),
-    ghost: cn(
-      "bg-transparent text-neutral-900",
-      "hover:bg-neutral-100"
-    ),
-  };
-
-  return variants[variant];
-}
+const sizes: Record<ButtonSize, string> = {
+  sm: "h-9 px-4 text-sm",
+  md: "h-11 px-5 text-sm",
+  lg: "h-12 px-6 text-base",
+};
 
 export function Button(props: ButtonProps) {
-  const {
-    className,
-    children,
-    variant = "secondary",
-    size = "md",
-    disabled,
-    ...rest
-  } = props as ButtonProps;
+  const variant = props.variant ?? "default";
+  const size = props.size ?? "md";
+  const classes = cn(base, variants[variant], sizes[size], props.className);
 
-  const classes = cn(baseClasses(size), variantClasses(variant), className);
+  if (props.href !== undefined) {
+    const { href, children, target, rel, ...linkProps } = props;
+    const safeRel = target === "_blank" ? rel ?? "noopener noreferrer" : rel;
 
-  // Link mode
-  if ("href" in props && props.href) {
-    const { href, ...anchorProps } = rest as Omit<ButtonAsLink, keyof CommonProps>;
     return (
-      <Link
-        href={href}
-        className={classes}
-        aria-disabled={disabled ? true : undefined}
-        tabIndex={disabled ? -1 : undefined}
-        {...anchorProps}
-      >
+      <Link href={href} className={classes} target={target} rel={safeRel} {...linkProps}>
         {children}
       </Link>
     );
   }
 
-  // Button mode
-  const buttonProps = rest as Omit<ButtonAsButton, keyof CommonProps>;
+  const { children, type = "button", ...buttonProps } = props;
   return (
-    <button className={classes} disabled={disabled} {...buttonProps}>
+    <button type={type} className={classes} {...buttonProps}>
       {children}
     </button>
   );

@@ -1,57 +1,65 @@
 import { NextResponse } from "next/server";
-import { stripe, getSiteUrl, donationCurrency } from "@/lib/donate/stripe";
+import { donationCurrency, getSiteUrl, stripe } from "@/lib/donate/stripe";
+
+type DonateBody = {
+  amount?: unknown;
+};
+
+function parseAmount(value: unknown) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return null;
+  }
+
+  return Math.round(amount * 100);
+}
 
 export async function POST(req: Request) {
-  const form = await req.formData();
-  const amountUsd = Number(form.get("amount") || 0);
-  const frequency = String(form.get("frequency") || "one_time");
+  try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return NextResponse.json({ ok: false, error: "Missing STRIPE_SECRET_KEY" }, { status: 500 });
+    }
 
-  if (!Number.isFinite(amountUsd) || amountUsd <= 0) {
-    return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
-  }
+    const body = (await req.json().catch(() => ({}))) as DonateBody;
+    const amountInCents = parseAmount(body.amount);
 
-  const amountCents = Math.round(amountUsd * 100);
-  const siteUrl = getSiteUrl();
+    if (amountInCents === null) {
+      return NextResponse.json({ ok: false, error: "Invalid amount" }, { status: 400 });
+    }
 
-  const mode = frequency === "monthly" ? "subscription" : "payment";
-
-  // For subscriptions, Stripe requires price objects normally.
-  // To keep architecture clean, we create a simple recurring price on the fly (acceptable for MVP),
-  // and later migrate to managed Prices in Stripe Dashboard without changing frontend.
-  if (mode === "subscription") {
-    const product = await stripe.products.create({ name: "LMGHI Monthly Donation" });
-    const price = await stripe.prices.create({
-      product: product.id,
-      unit_amount: amountCents,
-      currency: donationCurrency(),
-      recurring: { interval: "month" },
-    });
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || getSiteUrl();
 
     const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      line_items: [{ price: price.id, quantity: 1 }],
-      success_url: `${siteUrl}/get-involved/donate/success`,
-      cancel_url: `${siteUrl}/get-involved/donate/cancel`,
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: donationCurrency(),
+            unit_amount: amountInCents,
+            product_data: {
+              name: "LMGHI Donation",
+              description: "Support delivery systems, reporting, and governance.",
+            },
+          },
+        },
+      ],
+      success_url: `${siteUrl}/get-involved/donate?success=1`,
+      cancel_url: `${siteUrl}/get-involved/donate?canceled=1`,
     });
 
-    return NextResponse.redirect(session.url!, 303);
+    if (!session.url) {
+      return NextResponse.json({ ok: false, error: "Failed to create checkout session" }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      checkoutUrl: session.url,
+      sessionId: session.id,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown donation error";
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
-
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    line_items: [
-      {
-        price_data: {
-          currency: donationCurrency(),
-          product_data: { name: "LMGHI Donation" },
-          unit_amount: amountCents,
-        },
-        quantity: 1,
-      },
-    ],
-    success_url: `${siteUrl}/get-involved/donate/success`,
-    cancel_url: `${siteUrl}/get-involved/donate/cancel`,
-  });
-
-  return NextResponse.redirect(session.url!, 303);
 }

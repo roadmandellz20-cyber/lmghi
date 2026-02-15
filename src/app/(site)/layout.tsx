@@ -8,6 +8,8 @@ export const metadata: Metadata = {
     "Structured, governed, evidence-driven programs strengthening health delivery across West Africa.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <>

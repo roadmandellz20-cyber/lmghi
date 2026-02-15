@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { getPillar, pillars } from "@/lib/programs";
+import { getPillar } from "@/lib/programs";
 
-export function generateStaticParams() {
-  return pillars.map((p) => ({ pillar: p.id }));
-}
+type ProgramRouteParams = {
+  pillar: string;
+  program: string;
+};
 
-export default function ProgramPillarPage({ params }: { params: { pillar: string } }) {
-  const pillar = getPillar(params.pillar);
+export default async function ProgramPillarPage({ params }: { params: Promise<ProgramRouteParams> }) {
+  const { pillar: pillarSlug } = await params;
+  const pillar = getPillar(pillarSlug);
 
   if (!pillar) {
     return (
