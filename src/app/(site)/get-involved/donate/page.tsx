@@ -1,54 +1,92 @@
-import { baseMetadata } from "@/lib/seo";
-import { Card } from "@/components/ui/Card";
+"use client";
 
-export const metadata = baseMetadata({ title: "Donate" });
+import * as React from "react";
+import Button from "@/components/ui/Button";
+
+const AMOUNTS = [10, 25, 50, 100];
 
 export default function DonatePage() {
+  const [amount, setAmount] = React.useState<number>(25);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  async function startCheckout() {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/donate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data?.error ?? "Donation checkout failed.");
+
+      if (data?.url) {
+        window.location.href = data.url; // Stripe Checkout URL
+        return;
+      }
+
+      throw new Error("Stripe URL missing.");
+    } catch (e: any) {
+      setError(e?.message ?? "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <article className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6">
-      <header>
-        <h1 className="text-4xl font-semibold tracking-tight">Donate</h1>
-        <p className="mt-4 text-base text-neutral-600">
-          Secure donation processing (one-time or recurring). You will be redirected to Stripe Checkout.
-        </p>
-      </header>
+    <main className="mx-auto max-w-6xl px-4 py-12">
+      <h1 className="text-3xl font-semibold tracking-tight text-neutral-900">Donate</h1>
+      <p className="mt-2 text-neutral-600 max-w-2xl">
+        Fund delivery systems, reporting, and governance. Secure checkout via Stripe.
+      </p>
 
-      <section className="mt-10" aria-label="Donation form">
-        <Card title="Donation">
-          <form action="/api/donate" method="POST" className="grid gap-4">
-            <label className="grid gap-2 text-sm font-semibold">
-              Amount (USD)
-              <input
-                name="amount"
-                type="number"
-                min={1}
-                defaultValue={25}
-                className="rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                required
-              />
-            </label>
+      <section id="donate" className="mt-10 rounded-3xl border border-neutral-200 bg-white p-6 md:p-8 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div>
+            <div className="text-sm font-semibold text-neutral-900">Choose an amount</div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {AMOUNTS.map((a) => (
+                <button
+                  key={a}
+                  onClick={() => setAmount(a)}
+                  className={[
+                    "px-4 py-2 rounded-full border text-sm transition",
+                    a === amount
+                      ? "border-neutral-900 bg-neutral-900 text-white"
+                      : "border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50",
+                  ].join(" ")}
+                >
+                  ${a}
+                </button>
+              ))}
+            </div>
+          </div>
 
-            <label className="grid gap-2 text-sm font-semibold">
-              Frequency
-              <select name="frequency" className="rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm" defaultValue="one_time">
-                <option value="one_time">One-time</option>
-                <option value="monthly">Monthly (recurring)</option>
-              </select>
-            </label>
-
-            <button
-              type="submit"
-              className="rounded-2xl bg-neutral-900 px-5 py-3 text-sm font-semibold text-white hover:bg-neutral-800"
+          <div className="min-w-[240px]">
+            <Button
+              variant="primary"
+              className="w-full justify-center"
+              onClick={startCheckout}
+              disabled={loading}
             >
-              Continue to secure checkout
-            </button>
+              {loading ? "Redirecting..." : `Donate $${amount}`}
+            </Button>
 
-            <p className="text-xs text-neutral-500">
-              Launch currency: USD. Multi-currency will be added without rewriting the donation architecture.
+            <p className="mt-2 text-xs text-neutral-500">
+              Having issues? Email{" "}
+              <a className="underline" href="mailto:donate@lmghi.org">
+                donate@lmghi.org
+              </a>
             </p>
-          </form>
-        </Card>
+
+            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+          </div>
+        </div>
       </section>
-    </article>
+    </main>
   );
 }

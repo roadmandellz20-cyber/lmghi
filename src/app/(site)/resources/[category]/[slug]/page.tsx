@@ -4,14 +4,23 @@ import { qResourceByCategorySlug } from "@/lib/sanity/queries";
 import type { ResourceDetail } from "@/lib/sanity/types";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
-export async function generateMetadata({ params }: { params: { category: string; slug: string } }) {
-  return baseMetadata({ title: "Resource", path: `/resources/${params.category}/${params.slug}` });
+type ResourceRouteParams = {
+  category: string;
+  slug: string;
+};
+
+export async function generateMetadata({ params }: { params: Promise<ResourceRouteParams> }) {
+  const { category, slug } = await params;
+
+  return baseMetadata({ title: "Resource", path: `/resources/${category}/${slug}` });
 }
 
-export default async function ResourceDetailPage({ params }: { params: { category: string; slug: string } }) {
+export default async function ResourceDetailPage({ params }: { params: Promise<ResourceRouteParams> }) {
+  const { category, slug } = await params;
+
   const resource = await sanityClient.fetch<ResourceDetail | null>(
     qResourceByCategorySlug,
-    { category: params.category, slug: params.slug },
+    { category, slug },
     { next: { revalidate: 300 } }
   );
 

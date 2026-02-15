@@ -6,12 +6,18 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { Card } from "@/components/ui/Card";
 import Link from "next/link";
 
-export async function generateMetadata({ params }: { params: { pillar: string } }) {
-  return baseMetadata({ title: "Pillar", description: "Strategic pillar programs.", path: `/programs/${params.pillar}` });
+type PillarRouteParams = {
+  pillar: string;
+};
+
+export async function generateMetadata({ params }: { params: Promise<PillarRouteParams> }) {
+  const { pillar } = await params;
+
+  return baseMetadata({ title: "Pillar", description: "Strategic pillar programs.", path: `/programs/${pillar}` });
 }
 
-export default async function PillarPage({ params }: { params: { pillar: string } }) {
-  const pillarSlug = params.pillar;
+export default async function PillarPage({ params }: { params: Promise<PillarRouteParams> }) {
+  const { pillar: pillarSlug } = await params;
 
   const [pillar, programs] = await Promise.all([
     sanityClient.fetch<Pillar | null>(qPillarBySlug, { slug: pillarSlug }, { next: { revalidate: 300 } }),

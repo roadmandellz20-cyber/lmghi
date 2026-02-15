@@ -2,8 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
-* { -webkit-tap-highlight-color: transparent; }
-html { scroll-behavior: smooth; }
-::selection { background: #111827; color: #fff; }
+/* Base reset */
+html,
+body {
+  height: 100%;
+}
 
-a { text-underline-offset: 3px; }
+body {
+  margin: 0;
+  background: #ffffff;
+  color: #111827; /* neutral-900-ish */
+}
+
+/* Better defaults */
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Optional: make selection feel premium */
+::selection {
+  background: rgba(17, 24, 39, 0.15);
+}
