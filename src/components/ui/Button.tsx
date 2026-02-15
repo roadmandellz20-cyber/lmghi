@@ -1,75 +1,106 @@
-import Link, { type LinkProps } from "next/link";
+"use client";
+
 import * as React from "react";
+import Link, { type LinkProps } from "next/link";
 
-type Variant = "primary" | "secondary" | "outline" | "ghost";
-type Tone = "default" | "inverse";
-
-const base =
-  "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/20 " +
-  "disabled:opacity-50 disabled:pointer-events-none";
-
-const variantsDefault: Record<Variant, string> = {
-  primary: "bg-neutral-900 text-white hover:bg-neutral-800 active:bg-neutral-950 shadow-sm",
-  secondary: "bg-white text-neutral-900 hover:bg-neutral-50 active:bg-neutral-100 border border-neutral-200 shadow-sm",
-  outline: "bg-transparent text-neutral-900 hover:bg-neutral-50 active:bg-neutral-100 border border-neutral-200",
-  ghost: "bg-transparent text-neutral-900 hover:bg-neutral-50 active:bg-neutral-100",
-};
-
-const variantsInverse: Record<Variant, string> = {
-  primary: "bg-white text-neutral-900 hover:bg-neutral-100 active:bg-neutral-200 shadow-sm",
-  secondary: "bg-white/10 text-white hover:bg-white/15 active:bg-white/20 border border-white/15",
-  outline: "bg-transparent text-white hover:bg-white/10 active:bg-white/15 border border-white/20",
-  ghost: "bg-transparent text-white hover:bg-white/10 active:bg-white/15",
-};
+type Variant = "primary" | "secondary" | "ghost";
+type Size = "sm" | "md" | "lg";
 
 type CommonProps = {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
   variant?: Variant;
-  tone?: Tone;
-  target?: string;
-  rel?: string;
+  size?: Size;
+  disabled?: boolean;
 };
 
-type ButtonAsLinkProps = CommonProps &
-  Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
-    href: LinkProps["href"];
-  };
-
-type ButtonAsButtonProps = CommonProps &
-  React.ButtonHTMLAttributes<HTMLButtonElement> & {
+type ButtonAsButton = CommonProps &
+  Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children" | "disabled"> & {
     href?: never;
   };
 
-export type ButtonProps = ButtonAsLinkProps | ButtonAsButtonProps;
+type ButtonAsLink = CommonProps &
+  Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "className" | "children" | "href"> & {
+    href: LinkProps["href"];
+  };
 
-function cx(...parts: Array<string | undefined | false>) {
-  return parts.filter(Boolean).join(" ");
+export type ButtonProps = ButtonAsButton | ButtonAsLink;
+
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
 }
 
-export default function Button(props: ButtonProps) {
-  const variant = props.variant ?? "primary";
-  const tone = props.tone ?? "default";
-  const styles = tone === "inverse" ? variantsInverse : variantsDefault;
+function baseClasses(size: Size) {
+  const sizes: Record<Size, string> = {
+    sm: "h-9 px-3 text-sm",
+    md: "h-10 px-4 text-sm",
+    lg: "h-11 px-5 text-base",
+  };
 
-  const className = cx(base, styles[variant], props.className);
+  return cn(
+    "inline-flex items-center justify-center gap-2 rounded-full whitespace-nowrap",
+    "transition-colors select-none",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20",
+    "disabled:opacity-50 disabled:pointer-events-none",
+    sizes[size]
+  );
+}
 
-  if ("href" in props) {
-    const { href, children, target, rel, ...rest } = props;
-    const safeRel = target === "_blank" ? rel ?? "noopener noreferrer" : rel;
+function variantClasses(variant: Variant) {
+  // IMPORTANT: force text colors to avoid dark-on-dark.
+  const variants: Record<Variant, string> = {
+    primary: cn(
+      "bg-neutral-900 text-white",
+      "hover:bg-neutral-800"
+    ),
+    secondary: cn(
+      "bg-white text-neutral-900 border border-neutral-200",
+      "hover:bg-neutral-50"
+    ),
+    ghost: cn(
+      "bg-transparent text-neutral-900",
+      "hover:bg-neutral-100"
+    ),
+  };
 
+  return variants[variant];
+}
+
+export function Button(props: ButtonProps) {
+  const {
+    className,
+    children,
+    variant = "secondary",
+    size = "md",
+    disabled,
+    ...rest
+  } = props as ButtonProps;
+
+  const classes = cn(baseClasses(size), variantClasses(variant), className);
+
+  // Link mode
+  if ("href" in props && props.href) {
+    const { href, ...anchorProps } = rest as Omit<ButtonAsLink, keyof CommonProps>;
     return (
-      <Link href={href} className={className} target={target} rel={safeRel} {...rest}>
+      <Link
+        href={href}
+        className={classes}
+        aria-disabled={disabled ? true : undefined}
+        tabIndex={disabled ? -1 : undefined}
+        {...anchorProps}
+      >
         {children}
       </Link>
     );
   }
 
-  const { children, ...rest } = props;
+  // Button mode
+  const buttonProps = rest as Omit<ButtonAsButton, keyof CommonProps>;
   return (
-    <button className={className} {...rest}>
+    <button className={classes} disabled={disabled} {...buttonProps}>
       {children}
     </button>
   );
 }
+
+export default Button;

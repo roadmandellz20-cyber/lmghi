@@ -6,14 +6,12 @@ export const metadata: Metadata = {
   description: "Lambano Medfront Global Health Initiative",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-white text-neutral-900 antialiased">{children}</body>
+      <body className="min-h-screen bg-white text-neutral-900 antialiased">
+        {children}
+      </body>
     </html>
   );
 }
